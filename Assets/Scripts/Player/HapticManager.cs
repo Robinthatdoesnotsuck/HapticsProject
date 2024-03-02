@@ -10,15 +10,18 @@ public class HapticManager : MonoBehaviour
     private IntPtr myHapticPlugin;
 
     private Thread myHapticThread;
+    
 
     private bool hapticThreadIsRunning;
     [SerializeField]
     public GameObject[] hapticCursors;
 
     HapticInteractionPoint[] myHIP = new HapticInteractionPoint[16];
-
+    
+    public GameObject IHIP;
+    private Material ihipMaterial;
     public float workspace = 100.0f;
-
+    
     private int hapticDevices;
 
     private Vector3[] position = new Vector3[16];
@@ -29,8 +32,15 @@ public class HapticManager : MonoBehaviour
     private bool[] button1 = new bool[16];
     private bool[] button2 = new bool[16];
     private bool[] button3 = new bool[16];
+
+    public bool downGravityZone = false;
+    public bool rightGravityZone = false;
+    public bool upGravityZone = false;
+    public bool leftGravityZone = false;
     // Use this for initialization
-    void Start () {
+    void Start ()
+    {
+        ihipMaterial = IHIP.GetComponent<Renderer>().material;
         // inizialization of Haptic Plugin
         Debug.Log("Starting Haptic Devices");
         // check if haptic devices libraries were loaded
@@ -92,15 +102,62 @@ public class HapticManager : MonoBehaviour
                 button1[i] = HapticPluginImport.GetHapticsButtons(myHapticPlugin, i, 2);
                 button2[i] = HapticPluginImport.GetHapticsButtons(myHapticPlugin, i, 3);
                 button3[i] = HapticPluginImport.GetHapticsButtons(myHapticPlugin, i, 4);
+                /*
+                if (HapticPluginImport.GetHapticsLinearVelocity(myHapticPlugin, i).y > 0.25)
+                {
+                    Vector3 gravity = new Vector3(0, 9.8f, 0);
+                    gravity = myHIP[i].mass * gravity;
+                    //ihipMaterial.color = Color.red;
+                    HapticPluginImport.SetHapticsForce(myHapticPlugin, i, gravity);   
+                    
+                }
+                else 
+                {
+                      
+                }
+                */
+                if (downGravityZone)
+                {
+                    Vector3 gravity = new Vector3(0, -9.8f, 0);
+                    gravity = myHIP[i].mass * gravity;
+                    //ihipMaterial.color = Color.red;
+                    HapticPluginImport.SetHapticsForce(myHapticPlugin, i, gravity);  
+                    //print("come ultra colota");
+                }
+                if(upGravityZone)
+                {
+                    Vector3 gravity = new Vector3(0, 9.8f, 0);
+                    gravity = myHIP[i].mass * gravity;
+                    //ihipMaterial.color = Color.red;
+                    HapticPluginImport.SetHapticsForce(myHapticPlugin, i, gravity);  
+                }
 
+                if (rightGravityZone)
+                {
+                    Vector3 gravity = new Vector3(9.8f, 0, 0);
+                    gravity = myHIP[i].mass * gravity;
+                    //ihipMaterial.color = Color.red;
+                    HapticPluginImport.SetHapticsForce(myHapticPlugin, i, gravity); 
+                }
+                if (leftGravityZone)
+                {
+                    Vector3 gravity = new Vector3(-9.8f, 0, 0);
+                    gravity = myHIP[i].mass * gravity;
+                    //ihipMaterial.color = Color.red;
+                    HapticPluginImport.SetHapticsForce(myHapticPlugin, i, gravity); 
+                }
                 if (button0[i])
                 {
                     // ADD Jump function
-                    Vector3 gravity = new Vector3(0, -9.8f, 0);
-                    gravity = myHIP[i].mass * gravity;
-                    HapticPluginImport.SetHapticsForce(myHapticPlugin, i, gravity);
+                    Vector3 angularVelocity = HapticPluginImport.GetHapticsLinearVelocity(myHapticPlugin, i);
+                    //print("Angular x: " + angularVelocity.x);
+                    //print("Angular y: " + angularVelocity.y);
+                    print("linear y: " + angularVelocity.y);
                 }
-
+                if (myHIP[i].HipIsColliding())
+                {
+                    SetForceByDesiredPosition(i, myHIP[i].CollidingObjectPosition());
+                }
                 HapticPluginImport.UpdateHapticDevices(myHapticPlugin, i);
             }
         }
@@ -233,5 +290,29 @@ public class HapticManager : MonoBehaviour
                 break;
         }
         return temp;
+    }
+    private void SetForceByDesiredPosition(int hapDevNum, Vector3 desiredPosition)
+    {
+        // compute linear force    
+        Vector3 direction = desiredPosition - position[hapDevNum];
+        Vector3 forceField = myHIP[hapDevNum].Kp * direction;
+        HapticPluginImport.SetHapticsForce(myHapticPlugin, hapDevNum, forceField);
+        
+        // compute linear damping force
+        Vector3 linearVelocity = HapticPluginImport.GetHapticsLinearVelocity(myHapticPlugin, hapDevNum);
+        Vector3 forceDamping = -myHIP[hapDevNum].Kv * linearVelocity;
+        // sent force to haptic device
+        HapticPluginImport.SetHapticsForce(myHapticPlugin, hapDevNum, forceDamping);
+
+        // compute angular damping force
+        Vector3 angularVelocity = HapticPluginImport.GetHapticsAngularVelocity(myHapticPlugin, hapDevNum);
+        Vector3 torqueDamping = -myHIP[hapDevNum].Kvr * angularVelocity;
+        // sent torque to haptic device
+        HapticPluginImport.SetHapticsTorque(myHapticPlugin, hapDevNum, torqueDamping);
+
+        // compute gripper angular damping force
+        double gripperForce = -myHIP[hapDevNum].Kvg * HapticPluginImport.GetHapticsGripperAngularVelocity(myHapticPlugin, hapDevNum);
+        // sent gripper force to haptic device
+        HapticPluginImport.SetHapticsGripperForce(myHapticPlugin, hapDevNum, gripperForce);
     }
 }

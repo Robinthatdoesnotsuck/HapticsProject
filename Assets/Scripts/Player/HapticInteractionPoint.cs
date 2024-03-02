@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -8,8 +9,8 @@ public class HapticInteractionPoint : MonoBehaviour
 // establish Haptic Manager and IHIP objects
     public GameObject hapticManager;
     public GameObject IHIP;
-    public Text posText;
-    public Text rotText;
+    //public Text posText;
+    //public Text rotText;
 
     // get haptic device information from the haptic manager
     private HapticManager myHapticManager;
@@ -24,22 +25,44 @@ public class HapticInteractionPoint : MonoBehaviour
     private bool button2;
     private bool button3;
     public float mass;
+    private float radius;
     private Material material;
     private Rigidbody rigidBody;
+    
+    [Header("Stiffness Fator")]
+    // stiffness coefficient
+    public float Kp = 15; // [N/m]
 
+    [Header("Damping Factors")]
+    // damping term
+    public float Kv = 20; // [N/m]
+    public float Kvr = 10;
+    public double Kvg = 10;
+
+    // object in the scene that was hitted
+    private bool isTouching;
+    private float objectMass;
+    private Vector3 HIPCollidingPosition;
+    private Vector3 objectCollidingPosition;
+
+    Collider m_ObjectCollider;
     // Called when the script instance is being loaded
     void Awake() {
-        position = new Vector3(0, 0, 0);
+        position = new Vector3(0, 1, 0);
         button0 = false;
         button1 = false;
         button2 = false;
         button3 = false;
         material = IHIP.GetComponent<Renderer>().material;
         rigidBody = GetComponent<Rigidbody>();
+        isTouching = false;
     }
 
     // Use this for initialization
     void Start () {
+        m_ObjectCollider = gameObject.GetComponent<Collider>();
+        //Output the GameObject's Collider Bound extents
+        Debug.Log("extents : " + m_ObjectCollider.bounds.extents);
         myHapticManager = (HapticManager)hapticManager.GetComponent(typeof(HapticManager));
 	}
 	
@@ -52,32 +75,42 @@ public class HapticInteractionPoint : MonoBehaviour
 
         // get haptic device variables
         position = myHapticManager.GetPosition(hapticDevice);
-        posText.text = "Position: " + position.ToString();
+        //posText.text = "Position: " + position.ToString();
         orientation = myHapticManager.GetOrientation(hapticDevice);
-        rotText.text = "Rotation" + orientation.ToString();
+        //rotText.text = "Rotation" + orientation.ToString();
         button0 = myHapticManager.GetButtonState(hapticDevice, 0);
         button1 = myHapticManager.GetButtonState(hapticDevice, 1);
         button2 = myHapticManager.GetButtonState(hapticDevice, 2);
         button3 = myHapticManager.GetButtonState(hapticDevice, 3);
 
+        // update radius
+        radius = (IHIP.GetComponent<Renderer>().bounds.extents.magnitude) / 2.0f;
         // update haptic device mass
         mass = (mass > 0) ? mass : 0.0f;
         rigidBody.mass = mass;
 
-        // Aqui es donde se da la transformación de la posición conforme al dispositivo háptico 
-        // update positions of HIP and IHIP
-        IHIP.transform.position = position;
-        IHIP.transform.rotation = orientation;
-        transform.position = position;
-        transform.rotation = orientation;
-
+        
+        // update position
+        if (isTouching)
+        {
+            
+            IHIP.transform.position = HIPCollidingPosition ;
+            transform.position = position;
+        }
+        else
+        {
+            IHIP.transform.position = position;
+            transform.position = position;
+        }
         // change material color
         if (button0)
         {
+            
             material.color = Color.red;
         }
         else if (button1)
         {
+            isTouching = false;
             material.color = Color.blue;
         }
         else if (button2)
@@ -92,5 +125,106 @@ public class HapticInteractionPoint : MonoBehaviour
         {
             material.color = Color.white;
         }
+        Kv = (Kv > 1.0f * myHapticManager.GetHapticDeviceInfo(hapticDevice, 6)) ? 1.0f * myHapticManager.GetHapticDeviceInfo(hapticDevice, 6) : Kv;
+        Kvr = (Kvr > 1.0f * myHapticManager.GetHapticDeviceInfo(hapticDevice, 7)) ? 1.0f * myHapticManager.GetHapticDeviceInfo(hapticDevice, 7) : Kvr;
+        Kvg = (Kvr > 1.0f * myHapticManager.GetHapticDeviceInfo(hapticDevice, 8)) ? 1.0f * myHapticManager.GetHapticDeviceInfo(hapticDevice, 8) : Kvg;
+    }
+    void OnCollisionEnter(Collision collision)
+    {
+        // HIP is touching an object
+        isTouching = true;
+        
+        // calculate the collision point
+        objectCollidingPosition = position +  (collision.contacts[0].normal * Mathf.Abs(collision.contacts[0].separation));
+        
+        // obtain colliding object mass
+        objectMass = collision.rigidbody.mass;
+    }
+    private void OnCollisionStay(Collision collision)
+    {
+        // update IHIP position according to colliding position
+        if (Mathf.Abs(collision.contacts[0].separation) > radius)
+        {
+            
+            HIPCollidingPosition = collision.contacts[0].point +(Mathf.Abs(collision.contacts[0].separation) * collision.contacts[0].normal);
+        }
+        else
+        {
+            HIPCollidingPosition = collision.contacts[0].point + (radius * collision.contacts[0].normal);
+        }
+
+        // uodate collision point
+        objectCollidingPosition = position + (collision.contacts[0].normal * Mathf.Abs(collision.GetContact(0).separation));
+        
+        // obtain colliding object mass
+        objectMass = collision.rigidbody.mass;
+        
+        foreach (ContactPoint contact in collision.contacts)
+        {
+            Debug.DrawRay(contact.point, contact.normal, Color.black);
+        }
+
+        if (Vector3.Dot(Vector3.up, collision.GetContact(0).normal) == -1.0f)
+        {
+            myHapticManager.upGravityZone = true;
+            myHapticManager.downGravityZone = false;
+            myHapticManager.leftGravityZone = false;
+            myHapticManager.rightGravityZone = false;
+            print("up");
+        }
+        if (Vector3.Dot(Vector3.down, collision.GetContact(0).normal) == -1.0f)
+        {
+            myHapticManager.upGravityZone = false;
+            myHapticManager.downGravityZone = true;
+            myHapticManager.leftGravityZone = false;
+            myHapticManager.rightGravityZone = false;
+            print("down");
+        }
+        if (Vector3.Dot(Vector3.left, collision.GetContact(0).normal) == -1.0f)
+        {
+            myHapticManager.upGravityZone = false;
+            myHapticManager.downGravityZone = false;
+            myHapticManager.leftGravityZone = true;
+            myHapticManager.rightGravityZone = false;
+            print("left");
+        }
+        if (Vector3.Dot(Vector3.right, collision.GetContact(0).normal) == -1.0f)
+        {
+            myHapticManager.upGravityZone = false;
+            myHapticManager.downGravityZone = false;
+            myHapticManager.leftGravityZone = false;
+            myHapticManager.rightGravityZone = true;
+            print("right");
+        }
+    }
+
+    void OnCollisionExit(Collision collision)
+    {
+        isTouching = false;
+    }
+
+    public bool HipIsColliding ()
+    {
+        return isTouching;
+    }
+
+    public Vector3 CollidingObjectPosition()
+    {
+        return objectCollidingPosition;
+    }
+
+    public float CollidingObjectMass()
+    {
+        return objectMass;
+    }
+    
+    private void OnTriggerEnter(Collider other)
+    {
+        //myHapticManager.downGravityZone = true;
+    }
+
+    private void OnTriggerExit(Collider other)
+    {
+        //myHapticManager.downGravityZone = false;
     }
 }
