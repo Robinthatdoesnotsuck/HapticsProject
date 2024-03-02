@@ -5,6 +5,10 @@ using System.Threading;
 using UnityEngine;
 
 public class HapticManager : MonoBehaviour {
+
+    [SerializeField]
+    public Sticky sticky;
+
     // plugin import
     private IntPtr myHapticPlugin;
     // haptic thread
@@ -14,6 +18,7 @@ public class HapticManager : MonoBehaviour {
     // haptic devices in the scene
     public GameObject[] hapticCursors;
     HapticInteractionPoint[] myHIP = new HapticInteractionPoint[16];
+
 
     // haptic workspace
     public float workspace = 100.0f;
@@ -95,7 +100,7 @@ public class HapticManager : MonoBehaviour {
                 if (button0[i])
                 {
                     Debug.Log("UP");
-                    Vector3 gravity = new Vector3(0, -9.8f, 0);
+                    Vector3 gravity = new Vector3(0, -1*(sticky.weight), 0);
                     gravity = myHIP[i].mass * gravity;
                     HapticPluginImport.SetHapticsForce(myHapticPlugin, i, gravity);
                 }

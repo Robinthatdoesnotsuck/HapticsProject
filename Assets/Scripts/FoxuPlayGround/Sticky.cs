@@ -7,12 +7,17 @@ public class Sticky : MonoBehaviour
     public LayerMask ballLayer;
     public int playerLayer;
 
+    public float weight = 1f;
+
     public string tagToAdd;
 
     private void OnCollisionEnter(Collision other)
     {
         if (other.transform.CompareTag(tagToAdd))
         {
+            Debug.Log("Hi, " + weight);
+            weight += 5.0f;
+            Debug.Log("Bye, " + weight);
             other.transform.SetParent(transform);
             other.gameObject.layer = playerLayer;
 
