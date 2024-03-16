@@ -31,13 +31,13 @@ public class HapticInteractionPoint : MonoBehaviour
     
     [Header("Stiffness Fator")]
     // stiffness coefficient
-    public float Kp = 15; // [N/m]
+    public float Kp = 7.5f; // [N/m]
 
     [Header("Damping Factors")]
     // damping term
-    public float Kv = 20; // [N/m]
-    public float Kvr = 10;
-    public double Kvg = 10;
+    public float Kv = 10.0f; // [N/m]
+    public float Kvr = 5.0f;
+    public double Kvg = 5.0f;
 
     // object in the scene that was hitted
     private bool isTouching;
@@ -133,6 +133,7 @@ public class HapticInteractionPoint : MonoBehaviour
     {
         // HIP is touching an object
         isTouching = true;
+        print("Im touching something");
         
         // calculate the collision point
         objectCollidingPosition = position +  (collision.contacts[0].normal * Mathf.Abs(collision.contacts[0].separation));
@@ -143,7 +144,7 @@ public class HapticInteractionPoint : MonoBehaviour
     private void OnCollisionStay(Collision collision)
     {
         // update IHIP position according to colliding position
-        if (Mathf.Abs(collision.contacts[0].separation) > radius)
+        if (Mathf.Abs(collision.contacts[0].separation) > radius )
         {
             
             HIPCollidingPosition = collision.contacts[0].point +(Mathf.Abs(collision.contacts[0].separation) * collision.contacts[0].normal);
@@ -163,8 +164,8 @@ public class HapticInteractionPoint : MonoBehaviour
         {
             Debug.DrawRay(contact.point, contact.normal, Color.black);
         }
-
-        if (Vector3.Dot(Vector3.up, collision.GetContact(0).normal) == -1.0f)
+        
+        if (Vector3.Dot(Vector3.up, collision.GetContact(0).normal) == -1.0f && collision.gameObject.layer != 6 && collision.gameObject.tag != "food" && collision.gameObject.layer == 7)
         {
             myHapticManager.upGravityZone = true;
             myHapticManager.downGravityZone = false;
@@ -172,7 +173,8 @@ public class HapticInteractionPoint : MonoBehaviour
             myHapticManager.rightGravityZone = false;
             print("up");
         }
-        if (Vector3.Dot(Vector3.down, collision.GetContact(0).normal) == -1.0f)
+
+        if (Vector3.Dot(Vector3.down, collision.GetContact(0).normal) == -1.0f && collision.gameObject.layer != 6 && collision.gameObject.tag != "food" && collision.gameObject.layer == 7)
         {
             myHapticManager.upGravityZone = false;
             myHapticManager.downGravityZone = true;
@@ -180,7 +182,7 @@ public class HapticInteractionPoint : MonoBehaviour
             myHapticManager.rightGravityZone = false;
             print("down");
         }
-        if (Vector3.Dot(Vector3.left, collision.GetContact(0).normal) == -1.0f)
+        if (Vector3.Dot(Vector3.left, collision.GetContact(0).normal) == -1.0f && collision.gameObject.layer != 6 && collision.gameObject.tag != "food" && collision.gameObject.layer == 7)
         {
             myHapticManager.upGravityZone = false;
             myHapticManager.downGravityZone = false;
@@ -188,7 +190,7 @@ public class HapticInteractionPoint : MonoBehaviour
             myHapticManager.rightGravityZone = false;
             print("left");
         }
-        if (Vector3.Dot(Vector3.right, collision.GetContact(0).normal) == -1.0f)
+        if (Vector3.Dot(Vector3.right, collision.GetContact(0).normal) == -1.0f && collision.gameObject.layer != 6 && collision.gameObject.tag != "food" && collision.gameObject.layer == 7)
         {
             myHapticManager.upGravityZone = false;
             myHapticManager.downGravityZone = false;
@@ -196,11 +198,13 @@ public class HapticInteractionPoint : MonoBehaviour
             myHapticManager.rightGravityZone = true;
             print("right");
         }
+
     }
 
     void OnCollisionExit(Collision collision)
     {
         isTouching = false;
+        
     }
 
     public bool HipIsColliding ()
