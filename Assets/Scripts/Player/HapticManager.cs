@@ -105,7 +105,7 @@ public class HapticManager : MonoBehaviour
                 button1[i] = HapticPluginImport.GetHapticsButtons(myHapticPlugin, i, 2);
                 button2[i] = HapticPluginImport.GetHapticsButtons(myHapticPlugin, i, 3);
                 button3[i] = HapticPluginImport.GetHapticsButtons(myHapticPlugin, i, 4);
-
+                
                 if (button0[i])
                 {
                     print("Pegacion");
@@ -116,11 +116,6 @@ public class HapticManager : MonoBehaviour
 
                 if (downGravityZone)
                 {
-                    //Vector3 gravity = new Vector3(0, -4.9f, 0);
-                    //gravity = myHIP[i].mass * gravity;
-                    ////ihipMaterial.color = Color.red;
-                    //HapticPluginImport.SetHapticsForce(myHapticPlugin, i, gravity);
-                    ////print("come ultra colota");
                     SetForceDown(i, myHIP[i].CollidingObjectPosition());
                     Vector3 linearVelocity = HapticPluginImport.GetHapticsLinearVelocity(myHapticPlugin, i);
                     print(linearVelocity.y);
@@ -131,7 +126,6 @@ public class HapticManager : MonoBehaviour
                 }
                 if (upGravityZone)
                 {
-                    //SetForceByDesiredPosition(i, myHIP[i].CollidingObjectPosition());
                     SetForceUp(i, myHIP[i].CollidingObjectPosition());
                     Vector3 linearVelocity = HapticPluginImport.GetHapticsLinearVelocity(myHapticPlugin, i);
                     print(linearVelocity.y);
@@ -140,35 +134,26 @@ public class HapticManager : MonoBehaviour
                         upGravityZone = false;
                     }
                 }
-
-
                 if (rightGravityZone)
                 {
-                    //Vector3 gravity = new Vector3(4.9f, 0, 0);
-                    //gravity = myHIP[i].mass * gravity;
-                    ////ihipMaterial.color = Color.red;
-                    //HapticPluginImport.SetHapticsForce(myHapticPlugin, i, gravity);
                     SetForceRight(i, myHIP[i].CollidingObjectPosition());
+                    Vector3 linearVelocity = HapticPluginImport.GetHapticsLinearVelocity(myHapticPlugin, i);
+                    print(linearVelocity.x);
+                    if (linearVelocity.x <= -0.25f)
+                    {
+                        rightGravityZone = false;
+                    }
                 }
                 if (leftGravityZone)
                 {
-                    //Vector3 gravity = new Vector3(-9.8f, 0, 0);
-                    //gravity = myHIP[i].mass * gravity;
-                    ////ihipMaterial.color = Color.red;
-                    //HapticPluginImport.SetHapticsForce(myHapticPlugin, i, gravity);
                     SetForceLeft(i, myHIP[i].CollidingObjectPosition());
+                    Vector3 linearVelocity = HapticPluginImport.GetHapticsLinearVelocity(myHapticPlugin, i);
+                    print(linearVelocity.x);
+                    if (linearVelocity.x >= 0.25f)
+                    {
+                        leftGravityZone = false;
+                    }
                 }
-                // Jump function
-                /*
-                if (button0[i])
-                {
-                    // ADD Jump function
-                    Vector3 angularVelocity = HapticPluginImport.GetHapticsLinearVelocity(myHapticPlugin, i);
-                    //print("Angular x: " + angularVelocity.x);
-                    //print("Angular y: " + angularVelocity.y);
-                    print("linear y: " + angularVelocity.y);
-                }*/
-                // idk
 
                 if (myHIP[i].HipIsColliding())
                 {

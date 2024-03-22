@@ -75,6 +75,7 @@ public class HapticInteractionPoint : MonoBehaviour
 
         // get haptic device variables
         position = myHapticManager.GetPosition(hapticDevice);
+        print("pos" + position);
         //posText.text = "Position: " + position.ToString();
         orientation = myHapticManager.GetOrientation(hapticDevice);
         //rotText.text = "Rotation" + orientation.ToString();
